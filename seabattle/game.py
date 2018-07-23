@@ -340,11 +340,7 @@ class Game(BaseGame):
 
         for position in positions:
             self.shot_queue.append(self.calc_index(position))
-<<<<<<< HEAD
 
-=======
-
->>>>>>> 6be81bdc5f02aebb2c2b309c9d72549c7efca47f
     def block_ship_surround_cells(self, position):
         x, y = position
 
@@ -356,17 +352,11 @@ class Game(BaseGame):
                 index = self.calc_index((row, col))
                 if index in self.shot_queue:
                     self.shot_queue.remove(index)
-<<<<<<< HEAD
-
-=======
-
->>>>>>> 6be81bdc5f02aebb2c2b309c9d72549c7efca47f
     def target_shot_queue_to_ship(self, position):
 
         x, y = position
 
         positions_to_add = [
-<<<<<<< HEAD
             (x - 1, y), (x + 1, y),
             (x - 2, y), (x + 2, y),
             (x - 3, y), (x + 3, y),
@@ -375,16 +365,6 @@ class Game(BaseGame):
             (x, y - 3), (x, y + 3),
         ]
 
-=======
-            (x - 1, y), (x + 1, y),
-            (x - 2, y), (x + 2, y),
-            (x - 3, y), (x + 3, y),
-            (x, y - 1), (x, y + 1),
-            (x, y - 2), (x, y + 2),
-            (x, y - 3), (x, y + 3),
-        ]
-
->>>>>>> 6be81bdc5f02aebb2c2b309c9d72549c7efca47f
         for pos in positions_to_add:
 
             row, col = pos
@@ -414,7 +394,6 @@ class Game(BaseGame):
 
         ЕГО И НУЖНО ЗАМЕНИТЬ НА СВОЙ АЛГОРИТМ
         """
-<<<<<<< HEAD
 
         try:
             self.print_field()
@@ -431,8 +410,6 @@ class Game(BaseGame):
             else:
                 self.shot_queue.remove(i)
                 continue
-=======
->>>>>>> 6be81bdc5f02aebb2c2b309c9d72549c7efca47f
 
         try:
             self.print_field()
