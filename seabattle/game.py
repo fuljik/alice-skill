@@ -48,6 +48,9 @@ class BaseGame(object):
         self.last_enemy_shot_position = None
         self.numbers = None
 
+        self.shot_queue = []
+        self.previous_shots = []
+
     def start_new_game(self, size=10, field=None, ships=None, numbers=None):
         assert(size <= 10)
         assert(len(field) == size ** 2 if field is not None else True)
@@ -68,9 +71,12 @@ class BaseGame(object):
         self.enemy_field = [EMPTY] * self.size ** 2
 
         self.ships_count = self.enemy_ships_count = len(self.ships)
+        print '%s' % self.enemy_ships_count
 
         self.last_shot_position = None
         self.last_enemy_shot_position = None
+
+        self.generate_shot_queue()
 
     def generate_field(self):
         raise NotImplementedError()
@@ -91,6 +97,15 @@ class BaseGame(object):
             lines.append('|%s|' % ''.join(str(mapping[x]) for x in field[y * self.size: (y + 1) * self.size]))
         lines.append('-' * (self.size + 2))
         log.info('\n'.join(lines))
+
+    def generate_shot_queue(self):
+        raise NotImplementedError()
+
+    def block_ship_surround_cells(self, position):
+        raise NotImplementedError()
+
+    def target_shot_queue_to_ship(self, position):
+        raise NotImplementedError()
 
     def print_enemy_field(self):
         self.print_field(self.enemy_field)
@@ -160,9 +175,13 @@ class BaseGame(object):
 
         if message in ['hit', 'kill']:
             self.enemy_field[index] = SHIP
+            self.target_shot_queue_to_ship(self.last_shot_position)
+            print 'SHIP'
 
             if message == 'kill':
                 self.enemy_ships_count -= 1
+                self.block_ship_surround_cells(self.last_shot_position)
+                print 'KILL'
 
         elif message == 'miss':
             self.enemy_field[index] = MISS
@@ -296,12 +315,99 @@ class Game(BaseGame):
         while not _try_to_place():
             pass
 
+    def generate_shot_queue(self):
+        """
+        Генерируем очередь стрельбы
+        """
+
+        positions = []
+        if self.size == 10:
+            positions = [(1, 4), (2, 3), (3, 2), (4, 1), (1, 8), (2, 7), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (8, 1),
+            (3, 10), (4, 9), (5, 8), (6, 7), (7, 6), (8, 5), (9, 4), (10, 3), (7, 10), (8, 9), (9, 8), (10, 7), (1, 2), (2, 1),
+            (1, 6), (2, 5), (3, 4), (2, 5), (1, 6), (1, 10), (2, 9), (3, 8), (4, 7), (5, 6), (6, 5), (7, 4), (8, 3), (9, 2), (10, 1),
+            (5, 10), (6, 9), (7, 8), (8, 7), (9, 6), (10, 5), (9, 10), (10, 9), (1, 1), (1, 3), (2, 2)]
+        else:
+            positions = []
+
+
+        for i in range(self.size):
+            for j in range(self.size):
+                if (i, j) not in positions:
+                    positions.append((i,j))
+
+        for position in positions:
+            self.shot_queue.append(self.calc_index(position))
+
+    def block_ship_surround_cells(self, position):
+        x, y = position
+
+        rows = range(max(0, x - 1), min(x + 2, self.size))
+        cols = range(max(0, y - 1), min(y + 2, self.size))
+
+        for row in rows:
+            for col in cols:
+                index = self.calc_index((row, col))
+                if index in self.shot_queue:
+                    self.shot_queue.remove(index)
+
+    def target_shot_queue_to_ship(self, position):
+
+        x, y = position
+
+        positions_to_add = [
+            (x - 1, y), (x + 1, y),
+            (x - 2, y), (x + 2, y),
+            (x - 3, y), (x + 3, y),
+            (x, y - 1), (x, y + 1),
+            (x, y - 2), (x, y + 2),
+            (x, y - 3), (x, y + 3),
+        ]
+
+        for pos in positions_to_add:
+
+            row, col = pos
+            if row > self.size or col > self.size or row <= 0 or col <= 0:
+                continue
+
+            try:
+                index = self.calc_index(position)
+            except:
+                continue
+
+            self.shot_queue.insert(0, index)
+
+        def remove_duplicates(values):
+            output = []
+            seen = set()
+            for value in values:
+                if value not in seen:
+                    output.append(value)
+                    seen.add(value)
+            return output
+
+        self.shot_queue = remove_duplicates(self.shot_queue)
+
     def do_shot(self):
         """Метод выбора координаты выстрела.
 
         ЕГО И НУЖНО ЗАМЕНИТЬ НА СВОЙ АЛГОРИТМ
         """
-        index = random.choice([i for i, v in enumerate(self.enemy_field) if v == EMPTY])
+
+        try:
+            self.print_field()
+        except:
+            pass
+
+        print "queue %s" % self.shot_queue
+
+        for i in self.shot_queue:
+            if i not in self.previous_shots:
+                index = self.shot_queue.pop(0)
+                self.previous_shots.append(index)
+                break
+            else:
+                self.shot_queue.remove(i)
+                continue
 
         self.last_shot_position = self.calc_position(index)
         return self.convert_from_position(self.last_shot_position)
